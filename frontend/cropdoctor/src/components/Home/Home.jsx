@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from 'react-router-dom'; // Using Link for navigation
 import {
   ChevronDown,
   Leaf,
@@ -22,20 +23,31 @@ const LandingPage = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // This effect ensures the "Get Started" button's scroll behavior works correctly
+  // by targeting the main Sign Up button in the header.
   useEffect(() => {
     const signupBtn = document.getElementById("signup-btn");
     const getStartedBtn = document.getElementById("get-started-btn");
 
+    const handleClick = () => {
+      if (signupBtn) {
+        // We use the Link's path for navigation instead of scrollIntoView
+        // but can add a visual cue if desired.
+        signupBtn.classList.add("animate-pulse");
+        setTimeout(() => {
+          signupBtn.classList.remove("animate-pulse");
+        }, 2000);
+      }
+    };
+
     if (getStartedBtn) {
-      getStartedBtn.addEventListener("click", () => {
-        if (signupBtn) {
-          signupBtn.scrollIntoView({ behavior: "smooth" });
-          signupBtn.classList.add("animate-pulse");
-          setTimeout(() => {
-            signupBtn.classList.remove("animate-pulse");
-          }, 2000);
-        }
-      });
+      getStartedBtn.addEventListener("click", handleClick);
+    }
+    
+    return () => {
+      if (getStartedBtn) {
+        getStartedBtn.removeEventListener("click", handleClick);
+      }
     }
   }, []);
 
@@ -73,7 +85,7 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
+      {/* Header with original design and corrected functionality */}
       <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-green-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -84,7 +96,6 @@ const LandingPage = () => {
               </span>
             </div>
 
-            {/* Navigation */}
             <nav className="hidden md:flex space-x-8">
               <a
                 href="#features"
@@ -112,27 +123,27 @@ const LandingPage = () => {
               </a>
             </nav>
 
-            {/* Animated Login/Signup Buttons */}
             <div className="flex space-x-4">
-              <button className="relative overflow-hidden px-6 py-3 text-green-700 border-2 border-green-300 rounded-full hover:bg-green-50 transition-all duration-500 group transform hover:scale-110 shadow-lg hover:shadow-green-300/50">
+              <Link to="/login" className="relative overflow-hidden px-6 py-3 text-green-700 border-2 border-green-300 rounded-full hover:bg-green-50 transition-all duration-500 group transform hover:scale-110 shadow-lg hover:shadow-green-300/50">
                 <span className="relative z-10 font-semibold">Login</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-green-100 to-green-200 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left rounded-full"></div>
                 <div className="absolute inset-0 bg-gradient-to-r from-green-200 to-green-300 opacity-0 group-hover:opacity-30 transition-opacity duration-500 rounded-full"></div>
-              </button>
-              <button
+              </Link>
+              <Link
+                to="/register"
                 id="signup-btn"
                 className="relative overflow-hidden px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-full hover:from-green-700 hover:to-green-800 transition-all duration-500 group transform hover:scale-110 shadow-lg hover:shadow-green-500/50 font-semibold"
               >
                 <span className="relative z-10">Sign Up</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-green-700 to-green-800 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left rounded-full"></div>
                 <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-green-600 rounded-full blur opacity-0 group-hover:opacity-50 transition-opacity duration-500"></div>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section with original design and corrected functionality */}
       <section className="relative pt-16 pb-20 overflow-hidden">
         <div
           className="absolute inset-0 bg-gradient-to-br from-green-50 via-white to-amber-50"
@@ -141,20 +152,15 @@ const LandingPage = () => {
           }}
         ></div>
 
-        {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-green-200 to-green-300 rounded-full opacity-30 animate-pulse"></div>
           <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-amber-200 to-amber-300 rounded-full opacity-40 animate-bounce"></div>
           <div className="absolute bottom-20 left-1/4 w-40 h-40 bg-gradient-to-br from-green-100 to-green-200 rounded-full opacity-25 animate-pulse"></div>
           <div className="absolute top-60 right-1/3 w-16 h-16 bg-gradient-to-br from-green-300 to-green-400 rounded-full opacity-20 animate-ping"></div>
           <div className="absolute bottom-40 right-10 w-20 h-20 bg-gradient-to-br from-amber-100 to-amber-200 rounded-full opacity-30 animate-pulse"></div>
-
-          {/* Floating particles */}
           <div className="absolute top-1/4 left-1/3 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
           <div className="absolute top-1/2 right-1/4 w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
           <div className="absolute bottom-1/3 left-1/5 w-1 h-1 bg-green-500 rounded-full animate-ping"></div>
-
-          {/* Sparkle effects */}
           <div className="absolute top-32 left-1/2 animate-spin">
             <Sparkles className="h-6 w-6 text-green-300 opacity-60" />
           </div>
@@ -187,7 +193,8 @@ const LandingPage = () => {
               protecting our planet.
             </p>
             <div className="flex justify-center">
-              <button
+              <Link
+                to="/register"
                 id="get-started-btn"
                 className="group relative px-12 py-5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-full hover:from-green-700 hover:to-green-800 transition-all duration-500 transform hover:scale-110 shadow-2xl hover:shadow-green-500/50 font-semibold text-lg"
               >
@@ -196,12 +203,11 @@ const LandingPage = () => {
                   <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-green-600 rounded-full blur opacity-0 group-hover:opacity-50 transition-opacity duration-500"></div>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Scroll Indicator */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
           <ChevronDown className="h-8 w-8 text-green-600" />
         </div>
@@ -414,7 +420,7 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-green-600 to-green-800">
+      <section id="contact" className="py-20 bg-gradient-to-r from-green-600 to-green-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
             Ready to Transform Your Farm?
@@ -424,9 +430,9 @@ const LandingPage = () => {
             reduce costs, and farm more sustainably.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-4 bg-white text-green-600 rounded-lg hover:bg-green-50 transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold">
+            <Link to="/register" className="px-8 py-4 bg-white text-green-600 rounded-lg hover:bg-green-50 transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold">
               Start Free Trial
-            </button>
+            </Link>
             <button className="px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white hover:text-green-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
               Contact Sales <ArrowRight className="ml-2 h-4 w-4" />
             </button>
@@ -453,7 +459,7 @@ const LandingPage = () => {
               <h3 className="text-lg font-semibold mb-4">Product</h3>
               <ul className="space-y-2 text-green-300">
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a href="#features" className="hover:text-white transition-colors">
                     Features
                   </a>
                 </li>
@@ -474,12 +480,12 @@ const LandingPage = () => {
               <h3 className="text-lg font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-green-300">
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a href="#faq" className="hover:text-white transition-colors">
                     Help Center
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a href="#contact" className="hover:text-white transition-colors">
                     Contact
                   </a>
                 </li>
@@ -495,7 +501,7 @@ const LandingPage = () => {
               <h3 className="text-lg font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-green-300">
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a href="#about" className="hover:text-white transition-colors">
                     About
                   </a>
                 </li>

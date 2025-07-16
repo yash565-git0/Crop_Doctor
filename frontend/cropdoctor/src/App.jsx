@@ -1,10 +1,14 @@
 import { useEffect } from 'react';
-import { createBrowserRouter, Outlet, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Outlet } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from './context/AuthContext';
 import SignupPage from './components/Register/Register.jsx';
-import Login from './components/Login/Login.jsx';
-import LandingPage from './components/Home/Home.jsx'
+import LoginPage from './components/Login/Login.jsx';
+import LandingPage from './components/Home/Home.jsx';
+import DiseaseDetection from './components/Diseasedetection/Diseasedetection.jsx';
+import CropRecords from './components/Croprecords/Croprecords.jsx';
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute.jsx'; // Import the new component
+
 
 // Set the correct base URL
 axios.defaults.baseURL = 'http://localhost:8000/api/v1/users';
@@ -12,7 +16,7 @@ axios.defaults.withCredentials = true;
 
 // The App component now serves as a layout
 function App() {
-  const { setIsLoggedIn, setAuthUser } = useAuth();
+  const { isLoggedIn, setIsLoggedIn, setAuthUser } = useAuth();
 
   // This effect runs once when the app loads to check for an existing session
   useEffect(() => {
@@ -28,12 +32,16 @@ function App() {
         setAuthUser(null);
       }
     };
-    checkCurrentUser();
-  }, [setIsLoggedIn, setAuthUser]);
+    
+    // Only run the check if the user isn't already logged in from a previous action
+    if (!isLoggedIn) {
+        checkCurrentUser();
+    }
+
+  }, [isLoggedIn, setIsLoggedIn, setAuthUser]);
 
   return (
     <>
-      {/* You can add a Navbar here that will show on all pages */}
       <main>
         <Outlet /> {/* Child routes will be rendered here */}
       </main>
@@ -47,12 +55,21 @@ export const router = createBrowserRouter([
     path: '/',
     element: <App />, // App is now the main element
     children: [
+      // Public Routes
+      { path: '', element: <LandingPage />},
       { path: 'register', element: <SignupPage /> },
-      { path:'',element:<LandingPage />},
-      { path: 'login', element: <Login /> },
-      // Add your protected routes for dashboard etc. here later
+      { path: 'login', element: <LoginPage /> },
+
+      // Protected Routes
+      {
+        element: <ProtectedRoute />,
+        children: [
+          { path: 'disease-detection', element: <DiseaseDetection /> },
+          { path: 'crop-records', element: <CropRecords /> }
+        ]
+      }
     ],
   },
 ]);
 
-export default App;
+export default App
