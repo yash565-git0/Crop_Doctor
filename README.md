@@ -1,1 +1,0 @@
-A megahackathon project
