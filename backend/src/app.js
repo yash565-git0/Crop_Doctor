@@ -5,7 +5,8 @@ const app = express()
 // A whitelist of allowed origins
 const allowedOrigins = [
   'http://localhost:5173', // Your frontend's origin
-  'http://localhost:3000'  // A common alternative port
+  'http://localhost:3000',
+  'https://agrismart-k4ye.onrender.com' // A common alternative port
 ];
 
 app.use(cors({
