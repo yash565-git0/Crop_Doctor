@@ -11,7 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute.jsx'; // 
 
 
 // Set the correct base URL
-axios.defaults.baseURL = 'http://localhost:8000/api/v1/users';
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
 axios.defaults.withCredentials = true;
 
 // The App component now serves as a layout
