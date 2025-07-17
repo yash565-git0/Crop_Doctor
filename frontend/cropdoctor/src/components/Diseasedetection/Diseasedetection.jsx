@@ -7,6 +7,8 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
+import axios from "axios";
+
 
 const DiseaseDetection = ({ user }) => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -14,6 +16,7 @@ const DiseaseDetection = ({ user }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState(null); // To store any error messages
 
   const handleDrag = useCallback((e) => {
     e.preventDefault();
@@ -39,6 +42,7 @@ const DiseaseDetection = ({ user }) => {
     if (file && file.type.startsWith("image/")) {
       setSelectedFile(file);
       setResults(null);
+      setError(null); // Clear previous errors
     }
   };
 
@@ -46,29 +50,44 @@ const DiseaseDetection = ({ user }) => {
     if (!selectedFile || !cropName) return;
 
     setIsAnalyzing(true);
+    setResults(null);
+    setError(null);
 
-    // Simulate AI analysis
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    const formData = new FormData();
+    formData.append("image", selectedFile);
+    formData.append("title", cropName);
+    formData.append("description", `Disease analysis for ${cropName}`);
 
-    setResults({
-      disease: "Corn Leaf Blight",
-      confidence: 94,
-      severity: "Moderate",
-      recommendations: [
-        "Apply fungicide treatment immediately",
-        "Improve field drainage to reduce moisture",
-        "Remove infected plant debris",
-        "Monitor neighboring plants for spread",
-      ],
-      treatment: {
-        product: "Azoxystrobin-based fungicide",
-        dosage: "2-3 fl oz per acre",
-        timing: "Apply every 14 days until symptoms subside",
-      },
-    });
+    try {
+      // **FIX:** Use the full, correct URL for the image upload endpoint.
+      const response = await axios.post("http://localhost:8000/api/v1/images/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        // Ensure authentication cookie is sent with the request
+        withCredentials: true,
+      });
 
-    setIsAnalyzing(false);
+      const { prediction } = response.data.data;
+
+      // The backend now returns a structured prediction object
+      setResults({
+        disease: prediction.disease,
+        confidence: prediction.confidence,
+        description: prediction.description,
+        symptoms: prediction.symptoms,
+        treatment: prediction.treatment,
+        prevention: prediction.prevention,
+      });
+
+    } catch (err) {
+      console.error("Error analyzing image:", err);
+      setError(err.response?.data?.message || "An error occurred during analysis.");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-amber-50">
@@ -235,6 +254,13 @@ const DiseaseDetection = ({ user }) => {
                   "Analyze for Diseases"
                 )}
               </motion.button>
+
+               {/* Error Display */}
+              {error && (
+                <div className="mt-4 text-center bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg">
+                  <p>{error}</p>
+                </div>
+              )}
             </motion.div>
           </div>
 
@@ -313,7 +339,7 @@ const DiseaseDetection = ({ user }) => {
                 </h3>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Disease Detection */}
+                  {/* Disease Info */}
                   <div>
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                       <div className="flex items-center justify-between mb-2">
@@ -321,51 +347,33 @@ const DiseaseDetection = ({ user }) => {
                           Disease Detected
                         </h4>
                         <span className="text-sm text-red-600">
-                          {results.confidence}% confidence
+                          {results.confidence} confidence
                         </span>
                       </div>
                       <p className="text-red-700 text-lg font-semibold">
                         {results.disease}
                       </p>
-                      <p className="text-red-600 text-sm">
-                        Severity: {results.severity}
-                      </p>
                     </div>
-
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="font-medium text-blue-800 mb-2">
-                        Treatment
-                      </h4>
-                      <p className="text-blue-700 text-sm mb-1">
-                        <strong>Product:</strong> {results.treatment.product}
-                      </p>
-                      <p className="text-blue-700 text-sm mb-1">
-                        <strong>Dosage:</strong> {results.treatment.dosage}
-                      </p>
-                      <p className="text-blue-700 text-sm">
-                        <strong>Timing:</strong> {results.treatment.timing}
-                      </p>
+                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-medium text-yellow-800 mb-2">Description & Symptoms</h4>
+                        <p className="text-yellow-700 text-sm mb-2"><strong>Description:</strong> {results.description}</p>
+                        <p className="text-yellow-700 text-sm"><strong>Symptoms:</strong> {results.symptoms}</p>
                     </div>
                   </div>
 
                   {/* Recommendations */}
                   <div>
-                    <h4 className="font-medium text-green-800 mb-3">
-                      AI Recommendations
-                    </h4>
-                    <div className="space-y-2">
-                      {results.recommendations.map((rec, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.1 * index }}
-                          className="flex items-start space-x-2 p-2 bg-green-50 rounded-lg"
-                        >
-                          <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                          <p className="text-sm text-green-700">{rec}</p>
-                        </motion.div>
-                      ))}
+                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <h4 className="font-medium text-blue-800 mb-2">
+                        Treatment
+                      </h4>
+                       <p className="text-blue-700 text-sm">{results.treatment}</p>
+                    </div>
+                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h4 className="font-medium text-green-800 mb-2">
+                        Prevention
+                      </h4>
+                       <p className="text-green-700 text-sm">{results.prevention}</p>
                     </div>
                   </div>
                 </div>

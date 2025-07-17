@@ -2,201 +2,112 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Image } from "../models/image.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
-
+import { setupCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
-import path from "path";
 
-// Upload and scan image for disease detection
+function fileToGenerativePart(filePath, mimeType) {
+    return {
+        inlineData: {
+            data: Buffer.from(fs.readFileSync(filePath)).toString("base64"),
+            mimeType,
+        },
+    };
+}
+
 const uploadAndScanImage = asyncHandler(async (req, res) => {
-    console.log("[SCAN] Received upload request");
-    const { title, description } = req.body;
+    setupCloudinary();
     
-    if (!title || !description) {
-        console.log("[SCAN] Missing title or description");
-        throw new ApiError(400, "Title and description are required");
-    }
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    
+    // **THE FIX:** Use the correct model name without the suffix
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    if (!req.file) {
-        console.log("[SCAN] No image file provided");
-        throw new ApiError(400, "Image file is required");
-    }
+    const { title, description } = req.body;
+
+    if (!title || !description) throw new ApiError(400, "Title and description are required");
+    if (!req.file) throw new ApiError(400, "Image file is required");
+
+    const localPath = req.file.path;
 
     try {
+        const imageParts = [fileToGenerativePart(localPath, req.file.mimetype)];
+
         console.log("[SCAN] Uploading image to Cloudinary...");
-        const imageUrl = await uploadOnCloudinary(req.file.path);
-        console.log("[SCAN] Cloudinary upload complete:", imageUrl);
-        
-        if (!imageUrl) {
-            console.log("[SCAN] Cloudinary upload failed");
-            throw new ApiError(500, "Error uploading image to cloudinary");
-        }
+        const cloudinaryResponse = await uploadOnCloudinary(localPath);
+        if (!cloudinaryResponse || !cloudinaryResponse.url) throw new ApiError(500, "Error uploading image to Cloudinary");
+        console.log("[SCAN] Cloudinary upload complete.");
 
         console.log("[SCAN] Calling Gemini AI for prediction...");
-        const prediction = await predictDiseaseFromImage(req.file.path);
+        const prompt = `Analyze the provided image of a plant leaf. Format the response as a single, clean JSON object with keys: "disease", "confidence", "description", "symptoms", "treatment", "prevention".`;
+        
+        const result = await model.generateContent([prompt, ...imageParts]);
+        const responseText = await result.response.text();
+        const cleanedJsonString = responseText.replace(/```json|```/g, '').trim();
+        const prediction = JSON.parse(cleanedJsonString);
         console.log("[SCAN] Gemini AI prediction result:", prediction);
 
-        // Use prediction data directly from Gemini (no need for separate diseaseInfo call)
-        const diseaseInfo = {
-            description: prediction.description,
-            symptoms: prediction.symptoms,
-            treatment: prediction.treatment,
-            prevention: prediction.prevention
-        };
-
-        console.log("[SCAN] Saving image and prediction to database...");
         const image = await Image.create({
-            imageFile: imageUrl.url,
+            imageFile: cloudinaryResponse.url,
             disease: prediction.disease,
             owner: req.user._id,
             title,
             description,
-            confidence: prediction.confidence
+            confidence: prediction.confidence,
         });
-        console.log("[SCAN] Image and prediction saved to DB:", image._id);
+        const savedImage = await Image.findById(image._id).populate("owner", "username fullName");
 
-        // Clean up local file
-        fs.unlinkSync(req.file.path);
-        console.log("[SCAN] Local file cleaned up");
+        return res.status(201).json(new ApiResponse(201, { image: savedImage, prediction }, "Image analyzed successfully"));
 
-        const savedImage = await Image.findById(image._id).populate("owner", "username fullName avatar");
-
-        return res.status(201).json(
-            new ApiResponse(201, {
-                image: savedImage,
-                prediction: {
-                    disease: prediction.disease,
-                    confidence: prediction.confidence,
-                    description: diseaseInfo.description,
-                    symptoms: diseaseInfo.symptoms,
-                    treatment: diseaseInfo.treatment,
-                    prevention: diseaseInfo.prevention,
-                    probabilities: prediction.probabilities
-                }
-            }, "Image uploaded and analyzed successfully")
-        );
     } catch (err) {
-        console.log("[SCAN][ERROR] Error during scan:", err);
-        throw err;
+        console.error("[SCAN][ERROR]", err);
+        throw new ApiError(500, "Failed to analyze the image. " + err.message);
+    } finally {
+        if (fs.existsSync(localPath)) {
+            fs.unlinkSync(localPath);
+            console.log("[SCAN] Local file cleaned up.");
+        }
     }
 });
 
-// Get all images for a user
+// ... (The rest of your functions remain the same)
 const getUserImages = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
-    
-    const options = {
-        page: parseInt(page),
-        limit: parseInt(limit)
-    };
-
+    const options = { page: parseInt(page), limit: parseInt(limit) };
     const images = await Image.aggregate([
-        {
-            $match: {
-                owner: req.user._id
-            }
-        },
-        {
-            $lookup: {
-                from: "users",
-                localField: "owner",
-                foreignField: "_id",
-                as: "owner"
-            }
-        },
-        {
-            $addFields: {
-                owner: {
-                    $first: "$owner"
-                }
-            }
-        },
-        {
-            $sort: {
-                createdAt: -1
-            }
-        }
+        { $match: { owner: req.user._id } },
+        { $lookup: { from: "users", localField: "owner", foreignField: "_id", as: "owner" } },
+        { $addFields: { owner: { $first: "$owner" } } },
+        { $sort: { createdAt: -1 } }
     ]);
-
-    return res.status(200).json(
-        new ApiResponse(200, {
-            images,
-            currentPage: options.page,
-            totalPages: Math.ceil(images.length / options.limit)
-        }, "Images fetched successfully")
-    );
+    return res.status(200).json(new ApiResponse(200, { images, currentPage: options.page, totalPages: Math.ceil(images.length / options.limit) }, "Images fetched successfully"));
 });
 
-// Get image by ID
 const getImageById = asyncHandler(async (req, res) => {
     const { imageId } = req.params;
-
     const image = await Image.findById(imageId).populate("owner", "username fullName avatar");
-
-    if (!image) {
-        throw new ApiError(404, "Image not found");
-    }
-
-    // Check if user owns the image or is admin
-    if (image.owner._id.toString() !== req.user._id.toString()) {
-        throw new ApiError(403, "Access denied");
-    }
-
-    return res.status(200).json(
-        new ApiResponse(200, image, "Image fetched successfully")
-    );
+    if (!image) { throw new ApiError(404, "Image not found"); }
+    if (image.owner._id.toString() !== req.user._id.toString()) { throw new ApiError(403, "Access denied"); }
+    return res.status(200).json(new ApiResponse(200, image, "Image fetched successfully"));
 });
 
-// Delete image
 const deleteImage = asyncHandler(async (req, res) => {
     const { imageId } = req.params;
-
     const image = await Image.findById(imageId);
-
-    if (!image) {
-        throw new ApiError(404, "Image not found");
-    }
-
-    if (image.owner.toString() !== req.user._id.toString()) {
-        throw new ApiError(403, "Access denied");
-    }
-
+    if (!image) { throw new ApiError(404, "Image not found"); }
+    if (image.owner.toString() !== req.user._id.toString()) { throw new ApiError(403, "Access denied"); }
     await Image.findByIdAndDelete(imageId);
-
-    return res.status(200).json(
-        new ApiResponse(200, {}, "Image deleted successfully")
-    );
+    return res.status(200).json(new ApiResponse(200, {}, "Image deleted successfully"));
 });
 
-// Get disease statistics for user
 const getDiseaseStats = asyncHandler(async (req, res) => {
     const stats = await Image.aggregate([
-        {
-            $match: {
-                owner: req.user._id
-            }
-        },
-        {
-            $group: {
-                _id: "$disease",
-                count: { $sum: 1 }
-            }
-        },
-        {
-            $sort: {
-                count: -1
-            }
-        }
+        { $match: { owner: req.user._id } },
+        { $group: { _id: "$disease", count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
     ]);
-
     const totalImages = await Image.countDocuments({ owner: req.user._id });
-
-    return res.status(200).json(
-        new ApiResponse(200, {
-            stats,
-            totalImages
-        }, "Statistics fetched successfully")
-    );
+    return res.status(200).json(new ApiResponse(200, { stats, totalImages }, "Statistics fetched successfully"));
 });
 
 export {
@@ -205,4 +116,4 @@ export {
     getImageById,
     deleteImage,
     getDiseaseStats
-}; 
+};
