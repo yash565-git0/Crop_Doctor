@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { AuthContext } from '../../context/AuthContext';
 import { InferenceSession, Tensor } from 'onnxruntime-web';
 import ndarray from 'ndarray';
 import ops from 'ndarray-ops';
@@ -43,7 +43,7 @@ function softmax(arr) {
 }
 
 const DiseaseDetection = () => {
-    const { isLoggedIn } = useAuth();
+    const { isLoggedIn } =  useContext(AuthContext);
     const [session, setSession] = useState(null);
     const [imageFile, setImageFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
