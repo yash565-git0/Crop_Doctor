@@ -55,9 +55,7 @@ const DiseaseDetection = () => {
         const loadModel = async () => {
             try {
                 const modelPath = '/vit_plantdisease.onnx'; // From public folder
-                const newSession = await InferenceSession.create(modelPath, {
-                    executionProviders: ['webgl'],
-                });
+                const newSession = await InferenceSession.create(modelPath);
                 setSession(newSession);
                 toast.success('AI Model ready for analysis!');
             } catch (e) {
