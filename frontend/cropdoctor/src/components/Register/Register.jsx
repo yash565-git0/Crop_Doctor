@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link , useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { AuthContext } from '../../context/AuthContext';
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import toast from 'react-hot-toast';
 
 const SignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -72,28 +74,21 @@ const SignupPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-    try {
-      await axios.post("/api/v1/users/register", {
-        fullName: formData.fullName,
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-      });
-      navigate("/login");
-    } catch (error) {
-      setErrors({
-        ...errors,
-        form: error.response?.data?.message || "An error occurred.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+        e.preventDefault();
+        const toastId = toast.loading('Creating account...');
+        try {
+            const response = await axios.post('/api/v1/users/register', formData);
+            if (response.data && response.data.data.accessToken) {
+                // After successful registration, automatically log the user in
+                login(response.data.data.accessToken);
+                toast.success('Account created successfully!', { id: toastId });
+                navigate('/disease-detection');
+            }
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Registration failed.';
+            toast.error(errorMessage, { id: toastId });
+        }
+    };
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () =>
     setShowConfirmPassword(!showConfirmPassword);
