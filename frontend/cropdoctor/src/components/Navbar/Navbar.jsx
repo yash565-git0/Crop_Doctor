@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // Use our custom hook
+import { AuthContext  } from '../../context/AuthContext.jsx'; // Use our custom hook
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
-    const { isLoggedIn, user, logout } = useAuth();
+    const { isLoggedIn, user, logout } = AuthContext ();
     const navigate = useNavigate();
 
     const handleLogout = () => {
