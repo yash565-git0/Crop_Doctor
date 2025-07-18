@@ -60,7 +60,7 @@ const DiseaseDetection = ({ user }) => {
 
     try {
       // **FIX:** Use the full, correct URL for the image upload endpoint.
-      const response = await axios.post("http://localhost:8000/api/v1/images/upload", formData, {
+      const response = await axios.post("/api/v1/images/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
