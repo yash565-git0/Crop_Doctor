@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react'; // Import useContext
 import { Link } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext'; // Import the context
+import { AuthContext } from '../../context/AuthContext.jsx'; // Import the context
 import { InferenceSession, Tensor } from 'onnxruntime-web';
 import ndarray from 'ndarray';
 import ops from 'ndarray-ops';
