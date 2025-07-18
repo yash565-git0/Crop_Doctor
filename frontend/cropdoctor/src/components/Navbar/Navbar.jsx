@@ -1,17 +1,24 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext  } from '../../context/AuthContext.jsx'; // Use our custom hook
+import { AuthContext } from '../../context/AuthContext'; // Import the context directly
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
-    const { isLoggedIn, user, logout } = AuthContext ();
+    // Use the context directly and provide a fallback
+    const auth = useContext(AuthContext);
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        logout();
-        toast.success('Logged out successfully!');
-        navigate('/');
+        if (auth) {
+            auth.logout();
+            toast.success('Logged out successfully!');
+            navigate('/');
+        }
     };
+
+    // Safely check if the user is logged in
+    const isLoggedIn = auth?.isLoggedIn;
+    const user = auth?.user;
 
     return (
         <nav className="bg-white shadow-lg">

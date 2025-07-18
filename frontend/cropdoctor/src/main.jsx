@@ -1,34 +1,14 @@
-import { StrictMode } from 'react'
-import { router } from './App.jsx'
-import { RouterProvider } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext.jsx';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
+import './index.css';
+import { AuthProvider } from './context/AuthContext.jsx'; // Import the provider
 
-
-import ReactDOM,{ createRoot } from 'react-dom/client'
-// import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom' 
-import './index.css'
-import App from './App.jsx'
-// import Navbar from './components/Navbar/Navbar.jsx'
-// import Register from './components/Register/Register.jsx'
-// import Login from './components/Login/Login.jsx'
-
-// const router = createBrowserRouter(
-//   createRoutesFromElements(
-//     <Route path='/' >
-//       <Route path ='' element={<Register />}> </Route>
-//       <Route path = 'register' element={<Register />}></Route>
-//       <Route path = 'login' element={<Login />}></Route>
-
-
-//     </Route>
-//   )
-// )
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    {/* By wrapping App here, every component now has access to the auth state */}
     <AuthProvider>
-    {/* <RouterProvider  router={router} /> */}
-    <App />
+      <App />
     </AuthProvider>
-  </StrictMode>,
-)
+  </React.StrictMode>,
+);

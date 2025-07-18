@@ -1,12 +1,15 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
+// Create the context with a default value of null
 export const AuthContext = createContext(null);
 
+// The Provider component that will wrap your app
 export const AuthProvider = ({ children }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState(null);
 
+    // This effect runs once to check for an existing token in localStorage
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -16,11 +19,10 @@ export const AuthProvider = ({ children }) => {
                     setIsLoggedIn(true);
                     setUser(decoded);
                 } else {
-                    // Automatically log out if token is expired
                     localStorage.removeItem('token');
                 }
             } catch (error) {
-                console.error("Invalid token found in storage:", error);
+                console.error("Invalid token found:", error);
                 localStorage.removeItem('token');
             }
         }
@@ -39,8 +41,11 @@ export const AuthProvider = ({ children }) => {
         setIsLoggedIn(false);
     };
 
+    // The value provided to all children components
+    const value = { isLoggedIn, user, login, logout };
+
     return (
-        <AuthContext.Provider value={{ isLoggedIn, user, login, logout }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
