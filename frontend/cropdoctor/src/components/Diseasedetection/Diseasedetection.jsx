@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react'; // Import useContext
+import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext.jsx'; // Import the context
+import { useAuth } from '../../context/AuthContext';
 import { InferenceSession, Tensor } from 'onnxruntime-web';
 import ndarray from 'ndarray';
 import ops from 'ndarray-ops';
 import toast from 'react-hot-toast';
 
-// Helper functions (processImage and softmax) remain unchanged...
+// Helper function to process the image for your ViT model
 async function processImage(imageFile, width, height) {
     const image = new Image();
     const reader = new FileReader();
@@ -33,6 +33,8 @@ async function processImage(imageFile, width, height) {
         reader.readAsDataURL(imageFile);
     });
 }
+
+// Helper function to apply Softmax to get probabilities from logits
 function softmax(arr) {
     const max = Math.max(...arr);
     const exps = arr.map(x => Math.exp(x - max));
@@ -40,19 +42,14 @@ function softmax(arr) {
     return exps.map(e => e / sumExps);
 }
 
-
 const DiseaseDetection = () => {
-    // This is the line that caused the original error. It will now work.
-    const { isLoggedIn } = useContext(AuthContext); 
-    
-    // State variables remain the same
+    const { isLoggedIn } = useAuth();
     const [session, setSession] = useState(null);
     const [imageFile, setImageFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [error, setError] = useState('');
 
-    // useEffect for loading the model remains the same
     useEffect(() => {
         const loadModel = async () => {
             try {
@@ -65,17 +62,17 @@ const DiseaseDetection = () => {
                 toast.error("AI model failed to load.");
             }
         };
-        loadModel();
-    }, []);
+        if (!session) {
+          loadModel();
+        }
+    }, [session]);
 
-    // handleImageChange remains the same
     const handleImageChange = (e) => {
         setImageFile(e.target.files[0]);
         setAnalysisResult(null);
         setError('');
     };
 
-    // handleSubmit logic for analysis remains the same
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!isLoggedIn) {
@@ -92,6 +89,7 @@ const DiseaseDetection = () => {
         }
         setIsLoading(true);
         setError('');
+
         try {
             const modelWidth = 224;
             const modelHeight = 224;
@@ -99,24 +97,38 @@ const DiseaseDetection = () => {
             const inputTensor = new Tensor('float32', preprocessedData, [1, 3, modelHeight, modelWidth]);
             const feeds = { 'input': inputTensor };
             const results = await session.run(feeds);
-            const outputData = results[session.outputNames[0]].data;
+
+            // --- THIS IS THE FINAL FIX ---
+            // Robustly get the first output tensor from the results map, regardless of its name.
+            const outputTensor = Object.values(results)[0];
+            const outputData = outputTensor.data;
+            // -------------------------
+
             const probabilities = softmax(Array.from(outputData));
             const maxProb = Math.max(...probabilities);
             const maxIndex = probabilities.indexOf(maxProb);
+
             const classNames = [ 'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy', 'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew', 'Cherry_(including_sour)___healthy', 'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot', 'Corn_(maize)___Common_rust_', 'Corn_(maize)___Northern_Leaf_Blight', 'Corn_(maize)___healthy', 'Grape___Black_rot', 'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)', 'Grape___healthy', 'Orange___Haunglongbing_(Citrus_greening)', 'Peach___Bacterial_spot', 'Peach___healthy', 'Pepper,_bell___Bacterial_spot', 'Pepper,_bell___healthy', 'Potato___Early_blight', 'Potato___Late_blight', 'Potato___healthy', 'Raspberry___healthy', 'Soybean___healthy', 'Squash___Powdery_mildew', 'Strawberry___Leaf_scorch', 'Strawberry___healthy', 'Tomato___Bacterial_spot', 'Tomato___Early_blight', 'Tomato___Late_blight', 'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot', 'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot', 'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy' ];
+            
+            if (maxIndex < 0 || maxIndex >= classNames.length) {
+                throw new Error("Prediction index is out of bounds.");
+            }
+
             setAnalysisResult({
-                disease: classNames[maxIndex].replace(/_/g, ' '),
+                disease: classNames[maxIndex].replace(/___/g, ' - ').replace(/_/g, ' '),
                 confidence: (maxProb * 100).toFixed(2)
             });
+
         } catch (e) {
             console.error(e);
             setError(`Analysis failed: ${e.message}`);
+            toast.error(`Analysis failed: ${e.message}`);
         } finally {
             setIsLoading(false);
         }
     };
     
-    // This JSX structure is preserved from your original code.
+    // Your original page design is preserved below.
     return (
         <div className="flex justify-center items-center min-h-screen">
             <div className="grid md:grid-cols-2 gap-4 max-w-4xl w-full p-4">
