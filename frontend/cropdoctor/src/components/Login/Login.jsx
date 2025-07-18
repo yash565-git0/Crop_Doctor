@@ -34,7 +34,7 @@ const LoginPage = () => {
     setError("");
 
     try {
-      const response = await axios.post("/login", formData);
+      const response = await axios.post("/api/v1/users/login", formData);
       setAuthUser(response.data.data.user);
       setIsLoggedIn(true);
       // Navigate to the protected disease detection page

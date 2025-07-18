@@ -77,7 +77,7 @@ const SignupPage = () => {
 
     setIsLoading(true);
     try {
-      await axios.post("/register", {
+      await axios.post("/api/v1/users/register", {
         fullName: formData.fullName,
         username: formData.username,
         email: formData.email,

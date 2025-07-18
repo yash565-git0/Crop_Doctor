@@ -1,4 +1,5 @@
 import {v2 as cloudinary} from "cloudinary";
+import streamifier from 'streamifier';
 import fs from "fs";
 
 // We now export a function to set up the configuration on demand.
@@ -10,16 +11,15 @@ export const setupCloudinary = () => {
     });
 };
 
-export const uploadOnCloudinary = async (localfilepath) => {
-    try {
-        if(!localfilepath) return null;
-       const response = await cloudinary.uploader.upload(localfilepath, {
-            resource_type : "auto"
-        });
-        return response;
-
-    } catch (error) {
-        console.error("Cloudinary Upload Error:", error);
-        return null;
-    }
+export const uploadOnCloudinary = (fileBuffer) => {
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            { resource_type: "auto" },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+            }
+        );
+        streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+    });
 };

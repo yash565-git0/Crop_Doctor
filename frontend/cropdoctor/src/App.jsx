@@ -22,7 +22,7 @@ function App() {
   useEffect(() => {
     const checkCurrentUser = async () => {
       try {
-        const response = await axios.get('/me'); // Calls /api/v1/users/me
+        const response = await axios.get('/api/v1/users/me');  // Calls /api/v1/users/me
         if (response.data.data.user) {
           setIsLoggedIn(true);
           setAuthUser(response.data.data.user);

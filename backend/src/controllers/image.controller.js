@@ -28,46 +28,34 @@ const uploadAndScanImage = asyncHandler(async (req, res) => {
     if (!title || !description) throw new ApiError(400, "Title and description are required");
     if (!req.file) throw new ApiError(400, "Image file is required");
 
-    const localPath = req.file.path;
+    // const localPath = req.file.path;
 
-    try {
-        const imageParts = [fileToGenerativePart(localPath, req.file.mimetype)];
+   try {
+    // This is no longer needed: const imageParts = [fileToGenerativePart(localPath, req.file.mimetype)];
 
-        console.log("[SCAN] Uploading image to Cloudinary...");
-        const cloudinaryResponse = await uploadOnCloudinary(localPath);
-        if (!cloudinaryResponse || !cloudinaryResponse.url) throw new ApiError(500, "Error uploading image to Cloudinary");
-        console.log("[SCAN] Cloudinary upload complete.");
+    console.log("[SCAN] Uploading image to Cloudinary from buffer...");
+    // Pass the buffer directly to the updated function
+    const cloudinaryResponse = await uploadOnCloudinary(req.file.buffer); 
+    if (!cloudinaryResponse || !cloudinaryResponse.url) {
+        throw new ApiError(500, "Error uploading image to Cloudinary");
+    }
+    console.log("[SCAN] Cloudinary upload complete.");
 
-        console.log("[SCAN] Calling Gemini AI for prediction...");
-        const prompt = `Analyze the provided image of a plant leaf. Format the response as a single, clean JSON object with keys: "disease", "confidence", "description", "symptoms", "treatment", "prevention".`;
-        
-        const result = await model.generateContent([prompt, ...imageParts]);
-        const responseText = await result.response.text();
-        const cleanedJsonString = responseText.replace(/```json|```/g, '').trim();
-        const prediction = JSON.parse(cleanedJsonString);
-        console.log("[SCAN] Gemini AI prediction result:", prediction);
+    // For Gemini, you still need the base64 representation
+    const imagePart = {
+        inlineData: {
+            data: req.file.buffer.toString("base64"),
+            mimeType: req.file.mimetype,
+        },
+    };
 
-        const image = await Image.create({
-            imageFile: cloudinaryResponse.url,
-            disease: prediction.disease,
-            owner: req.user._id,
-            title,
-            description,
-            confidence: prediction.confidence,
-        });
-        const savedImage = await Image.findById(image._id).populate("owner", "username fullName");
+    const result = await model.generateContent([prompt, imagePart]);
+    // ... rest of the function is the same ...
 
-        return res.status(201).json(new ApiResponse(201, { image: savedImage, prediction }, "Image analyzed successfully"));
-
-    } catch (err) {
+} catch (err) {
         console.error("[SCAN][ERROR]", err);
         throw new ApiError(500, "Failed to analyze the image. " + err.message);
-    } finally {
-        if (fs.existsSync(localPath)) {
-            fs.unlinkSync(localPath);
-            console.log("[SCAN] Local file cleaned up.");
-        }
-    }
+    } 
 });
 
 // ... (The rest of your functions remain the same)
