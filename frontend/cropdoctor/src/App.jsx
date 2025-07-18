@@ -6,8 +6,8 @@ import { AuthProvider, AuthContext } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar/Navbar.jsx';
 
 import Home from './components/Home/Home.jsx';
-import Login from './components/Login/Login.jsx';
-import Register from './components/Register/Register.jsx';
+import LoginPage from './components/Login/Login.jsx';
+import SignupPage from './components/Register/Register.jsx';
 import Diseasedetection from './components/Diseasedetection/Diseasedetection.jsx';
 
 // This component protects routes that require a user to be logged in
@@ -29,8 +29,8 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<SignupPage />} />
           <Route
             path="/disease-detection"
             element={
