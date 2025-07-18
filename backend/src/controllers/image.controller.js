@@ -31,7 +31,7 @@ const uploadAndScanImage = asyncHandler(async (req, res) => {
     // const localPath = req.file.path;
 
    try {
-    // This is no longer needed: const imageParts = [fileToGenerativePart(localPath, req.file.mimetype)];
+    
 
     console.log("[SCAN] Uploading image to Cloudinary from buffer...");
     // Pass the buffer directly to the updated function
@@ -48,6 +48,10 @@ const uploadAndScanImage = asyncHandler(async (req, res) => {
             mimeType: req.file.mimetype,
         },
     };
+
+    const prompt = `Analyze the provided image of a ${title} leaf. Format the response as a single, 
+    clean JSON object with keys: "disease", "confidence", "description", "symptoms", "treatment", "prevention".`;
+
 
     const result = await model.generateContent([prompt, imagePart]);
     // ... rest of the function is the same ...
