@@ -1,11 +1,15 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [ tailwindcss(),react(),
+  plugins: [
+    react(),
+    tailwindcss(),
+    // This configuration tells Vite to copy the necessary .wasm files
+    // from the onnxruntime-web package to your final build folder.
     viteStaticCopy({
       targets: [
         {
@@ -15,4 +19,6 @@ export default defineConfig({
       ]
     })
   ],
-})
+});
+
+
