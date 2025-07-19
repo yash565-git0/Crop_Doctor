@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
 // Create the context with a default value of null
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     // The value provided to all children components
-    const value = { isLoggedIn, user, login, logout };
+    const value = { isLoggedIn, user, login, logout, setUser, setIsLoggedIn };
 
     return (
         <AuthContext.Provider value={value}>

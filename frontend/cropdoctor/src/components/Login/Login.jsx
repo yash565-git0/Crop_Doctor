@@ -1,8 +1,7 @@
-import React, { useState, useContext,useEffect  } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext.jsx'; // Import the context
 import axios from 'axios';
-// 
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 const LoginPage = () => {
@@ -14,14 +13,14 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState("");
-  const { setAuthUser, setIsLoggedIn } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate(); // Add this line
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-    const handleInputChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -29,34 +28,61 @@ const LoginPage = () => {
     }));
   };
 
-    const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    // New logic: The handleSubmit function now uses Axios and updates the global auth state
-   try {
-      const response = await axios.post("/api/v1/users/login", formData);
-      setAuthUser(response.data.data.user);
-      setIsLoggedIn(true);
-      // Navigate to the protected disease detection page
+    try {
+      // Add more specific error handling and logging
+      console.log("Attempting login with:", { username: formData.username });
+      
+      const response = await axios.post("/api/v1/users/login", formData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Add timeout
+        timeout: 10000,
+      });
+      
+      console.log("Login response:", response.data);
+      
+      const token = response.data.token || response.data.accessToken; // Handle different token field names
+      
+      if (!token) {
+        throw new Error("No token received from server");
+      }
+      
+      login(token); // from AuthContext
       navigate("/disease-detection"); 
     } catch (err) {
-      setError(err.response?.data?.message || "An error occurred.");
+      console.error("Login error:", err);
+      
+      if (err.code === 'ECONNABORTED') {
+        setError("Request timeout. Please try again.");
+      } else if (err.response) {
+        // Server responded with error
+        setError(err.response.data?.message || `Server error: ${err.response.status}`);
+      } else if (err.request) {
+        // Network error
+        setError("Network error. Please check your connection and try again.");
+      } else {
+        // Other errors
+        setError(err.message || "An unexpected error occurred.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
-         const togglePasswordVisibility = () => {
+
+  const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
   if (!mounted) return null;
 
-  // The rest of your JSX remains the same
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-amber-50 relative overflow-hidden">
-      {/* ... Your existing JSX for the login form ... */}
       <div className="min-h-screen flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-8 animate-fade-in">
@@ -148,7 +174,9 @@ const LoginPage = () => {
               </button>
             </form>
             {error && (
-              <p className="text-red-500 text-sm mt-4 text-center">{error}</p>
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm text-center">{error}</p>
+              </div>
             )}
             <div className="text-center mt-8 pt-6 border-t border-green-100">
               <p className="text-green-600">
@@ -160,7 +188,7 @@ const LoginPage = () => {
                   Sign up here
                 </Link>
               </p>  
-              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -168,8 +196,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage; // On success, update the global state and navigate
-        
-
-   
-
+export default LoginPage;
