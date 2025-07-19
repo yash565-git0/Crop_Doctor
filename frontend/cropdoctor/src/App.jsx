@@ -2,7 +2,7 @@ import './App.css';
 import { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider, AuthContext } from './context/AuthContext.jsx';
+import { AuthContext } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar/Navbar.jsx';
 
 import Home from './components/Home/Home.jsx';
@@ -23,7 +23,7 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     // Wrap everything in AuthProvider
-    <AuthProvider>
+    
       <Router>
         <Toaster />
         <Navbar />
@@ -41,7 +41,7 @@ function App() {
           />
         </Routes>
       </Router>
-    </AuthProvider>
+    
   );
 }
 

@@ -4,9 +4,9 @@ import cookieParser from "cookie-parser"
 const app = express()
 // A whitelist of allowed origins
 const allowedOrigins = [
-  'http://localhost:5173', // Your frontend's origin
+  'http://localhost:5173', 
   'http://localhost:3000',
-  'https://agrismart-k4ye.onrender.com' // A common alternative port
+  'https://agrismart-k4ye.onrender.com' 
 ];
 
 app.use(cors({
