@@ -24,42 +24,41 @@ const generateAccessAndRefreshToken = async function (userId) {
   }
 };
 
+
 const registerUser = asyncHandler(async (req, res) => {
-  const { username, email, fullName, password } = req.body;
+    const { fullName, email, username, password } = req.body;
 
-  // Validate required fields
-  if ([username, email, password, fullName].some((field) => !field || field.trim() === "")) {
-    throw new ApiError(400, "All fields are required");
-  }
+    if (!fullName || !email || !username || !password) {
+        throw new ApiError(400, "All fields are required");
+    }
 
-  // Check if user already exists
-  const existedUser = await User.findOne({
-    $or: [{ username }, { email }],
-  });
-  if (existedUser) {
-    throw new ApiError(409, "User with such email/Username already exists");
-  }
+    const existedUser = await User.findOne({ $or: [{ username }, { email }] });
 
-  // Create user
-  const user = await User.create({
-    fullName,
-    email,
-    password,
-    username: username.toLowerCase(),
-  });
+    if (existedUser) {
+        throw new ApiError(409, "User with email or username already exists");
+    }
 
-  const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
+    // This is a more robust way to handle user creation
+    try {
+        const user = await User.create({
+            fullName,
+            email,
+            username,
+            password,
+            // default avatar can be set in the model itself
+        });
 
-  if (!createdUser) {
-    throw new ApiError(500, "Something went wrong while registering the user");
-  }
+        // Directly return success after creation
+        return res.status(201).json(
+            new ApiResponse(201, { userId: user._id }, "User registered Successfully")
+        );
 
-  return res
-    .status(201)
-    .json(new ApiResponse(201, createdUser, "User registered successfully"));
+    } catch (error) {
+        // This will catch any database validation errors or other creation failures
+        throw new ApiError(500, `Error while registering user: ${error.message}`);
+    }
 });
+
 
 const loginUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;

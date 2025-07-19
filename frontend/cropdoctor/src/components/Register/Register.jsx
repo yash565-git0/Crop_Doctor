@@ -79,7 +79,8 @@ const SignupPage = () => {
 
     setIsLoading(true);
     try {
-      await axios.post("/api/v1/users/register", {
+      const apiUrl = `${import.meta.env.VITE_API_URL}/api/v1/users/register`;
+      await axios.post(apiUrl, {
         fullName: formData.fullName,
         username: formData.username,
         email: formData.email,

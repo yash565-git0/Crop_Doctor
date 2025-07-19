@@ -36,8 +36,9 @@ const LoginPage = () => {
     try {
       // Add more specific error handling and logging
       console.log("Attempting login with:", { username: formData.username });
+      const apiUrl = `${import.meta.env.VITE_API_URL}/api/v1/users/login`;
       
-      const response = await axios.post("/api/v1/users/login", formData, {
+      const response = await axios.post(apiUrl, formData, {
         headers: {
           'Content-Type': 'application/json',
         },
